@@ -5,7 +5,13 @@ const r = (n) => Math.round(n * 100) / 100;
 const ellipse = (cx, cy, rx, ry) =>
   `M${r(cx - rx)} ${cy}A${rx} ${ry} 0 1 0 ${r(cx + rx)} ${cy}A${rx} ${ry} 0 1 0 ${r(cx - rx)} ${cy}Z`;
 const circle = (cx, cy, rad) => ellipse(cx, cy, rad, rad);
-const poly = (...pts) => `M${pts.map(([x, y]) => `${x} ${y}`).join('L')}Z`;
+// Ellipses are drawn counterclockwise on screen; polygons are normalized to the same winding so the
+// union of all fills works with the nonzero fill rule when used as a clip.
+const poly = (...pts) => {
+  const area = pts.reduce((a, [x, y], i) => { const [nx, ny] = pts[(i + 1) % pts.length]; return a + (x * ny - nx * y); }, 0);
+  const ordered = area > 0 ? [...pts].reverse() : pts;
+  return `M${ordered.map(([x, y]) => `${x} ${y}`).join('L')}Z`;
+};
 
 function animal(id, name, fills, details, dots) {
   return { id, name, fills, lines: [...fills, ...details], dots };
