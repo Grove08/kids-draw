@@ -4,7 +4,7 @@ import { WIDTHS, shouldIgnorePointer, canvasPixelRatio, stampFontSize } from './
 const PIXEL_BUDGET = 4_000_000; // max backing-store pixels, keeps iPad memory sane
 const BG = '#ffffff';
 
-export function createBoard(canvasEl, { onChange = () => {} } = {}) {
+export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {} } = {}) {
   const ctx = canvasEl.getContext('2d');
   const history = createHistory(20);
   let cssW = 0, cssH = 0, ratio = 1;
@@ -42,6 +42,8 @@ export function createBoard(canvasEl, { onChange = () => {} } = {}) {
     const oldCanvas = canvasEl.width ? snapshotCanvas() : null;
     const oldCss = { w: cssW, h: cssH };
     if (activeId !== null) return;
+    const rect = canvasEl.getBoundingClientRect();
+    if (!rect.width || !rect.height) return; // screen hidden: keep the picture
     measure();
     if (cssW === oldCss.w && cssH === oldCss.h) return;
     canvasEl.width = Math.round(cssW * ratio);
@@ -49,7 +51,7 @@ export function createBoard(canvasEl, { onChange = () => {} } = {}) {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     fillWhite();
     if (oldCanvas && oldCss.w) drawContain(oldCanvas, oldCss.w, oldCss.h);
-    enqueue(async () => { history.reset(await toBlob()); onChange(); });
+    enqueue(async () => { history.reset(await toBlob()); onHistory(); });
   });
 
   // copy of the current backing store (taken before it is resized)
@@ -66,7 +68,7 @@ export function createBoard(canvasEl, { onChange = () => {} } = {}) {
   }
 
   function commit() {
-    enqueue(async () => { history.push(await toBlob()); onChange(); });
+    enqueue(async () => { history.push(await toBlob()); onHistory(); onChange(); });
   }
 
   function pos(e) {
@@ -160,18 +162,19 @@ export function createBoard(canvasEl, { onChange = () => {} } = {}) {
     undo() {
       return enqueue(async () => {
         const blob = history.undo();
-        if (blob) { await paintBlob(blob); onChange(); }
+        if (blob) { await paintBlob(blob); onHistory(); onChange(); }
       });
     },
     clear() {
       fillWhite();
-      return enqueue(async () => { history.reset(await toBlob()); onChange(); });
+      return enqueue(async () => { history.reset(await toBlob()); onHistory(); onChange(); });
     },
     async loadImage(blob) {
       fillWhite();
       if (blob) await paintBlob(blob);
-      return enqueue(async () => { history.reset(await toBlob()); });
+      return enqueue(async () => { history.reset(await toBlob()); onHistory(); });
     },
+    settled: () => queue, // resolves when pending history work (snapshots) is done
     toBlob,
   };
 }
