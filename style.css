@@ -197,3 +197,27 @@ html, body {
   .alpha-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 14px; }
   .alpha-cell { font-size: 60px; }
 }
+
+/* ---- coloring ---- */
+.tool[hidden] { display: none; }
+.gallery-tools { display: flex; gap: 12px; }
+#screen-coloring { display: flex; flex-direction: column; background: #faf7f0; }
+#screen-coloring[hidden] { display: none; }
+.color-grid {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  padding: 8px 16px 24px;
+  align-content: start;
+}
+.color-cell {
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 2px 0 #e3ddd0;
+  padding: 8px;
+}
+.color-cell canvas { display: block; pointer-events: none; }

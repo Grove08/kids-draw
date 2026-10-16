@@ -1,5 +1,6 @@
 import { createHistory } from './history.js';
 import { WIDTHS, shouldIgnorePointer, canvasPixelRatio, stampFontSize } from './drawing-logic.js';
+import { createTemplate, fitTransform } from './template.js';
 
 const PIXEL_BUDGET = 4_000_000; // max backing-store pixels, keeps iPad memory sane
 const BG = '#ffffff';
@@ -11,6 +12,7 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
   let color = '#212121', widthKey = 'medium', tool = 'brush', stamp = '🐱';
   let activeId = null, last = null, mid = null;
   let queue = Promise.resolve();
+  let animal = null, template = null; // coloring mode: paint is clipped to the animal, outline on top
 
   const toBlob = () => new Promise((res) => canvasEl.toBlob(res, 'image/png'));
 
@@ -29,12 +31,36 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   }
 
-  // Draw `img` scaled uniformly to fit the board, centered (no distortion).
+  // Draw `img` (w x h CSS px) scaled uniformly and centered (no distortion). In coloring mode the
+  // scale follows the outline's own scale, so the old outline lands exactly on the new one.
   function drawContain(img, w, h) {
-    const s = Math.min(cssW / w, cssH / h);
+    let s = Math.min(cssW / w, cssH / h);
+    if (animal) {
+      const from = fitTransform(w, h).scale;
+      if (from > 0) s = fitTransform(cssW, cssH).scale / from;
+    }
     const dw = w * s, dh = h * s;
     ctx.drawImage(img, (cssW - dw) / 2, (cssH - dh) / 2, dw, dh);
   }
+
+  function rebuildTemplate() {
+    template = animal ? createTemplate(animal, cssW, cssH, ratio) : null;
+  }
+
+  // Run `fn` (painting) inside the animal's clip, then redraw the outline over `box` (CSS px).
+  function paintIn(box, fn) {
+    if (!template) { fn(); return; }
+    ctx.save();
+    template.clip(ctx);
+    fn();
+    ctx.restore();
+    template.drawOutline(ctx, box);
+  }
+  const boxAround = (pts, pad) => {
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    const x = Math.min(...xs) - pad, y = Math.min(...ys) - pad;
+    return { x, y, w: Math.max(...xs) + pad - x, h: Math.max(...ys) + pad - y };
+  };
 
   // On resize the picture is scaled uniformly to fit (no distortion) and history restarts,
   // because earlier snapshots have the old pixel size.
@@ -51,6 +77,8 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     fillWhite();
     if (oldCanvas && oldCss.w) drawContain(oldCanvas, oldCss.w, oldCss.h);
+    rebuildTemplate();
+    if (template) template.drawOutline(ctx);
     enqueue(async () => { history.reset(await toBlob()); onHistory(); });
   });
 
@@ -86,18 +114,22 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
 
   function dot(p) {
     strokeStyle();
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, WIDTHS[widthKey] / 2, 0, Math.PI * 2);
-    ctx.fill();
+    paintIn(boxAround([p], WIDTHS[widthKey]), () => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, WIDTHS[widthKey] / 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
 
   function drawTo(p) {
     strokeStyle();
     const m = { x: (last.x + p.x) / 2, y: (last.y + p.y) / 2 };
-    ctx.beginPath();
-    ctx.moveTo(mid.x, mid.y);
-    ctx.quadraticCurveTo(last.x, last.y, m.x, m.y);
-    ctx.stroke();
+    paintIn(boxAround([mid, last, m], WIDTHS[widthKey]), () => {
+      ctx.beginPath();
+      ctx.moveTo(mid.x, mid.y);
+      ctx.quadraticCurveTo(last.x, last.y, m.x, m.y);
+      ctx.stroke();
+    });
     mid = m;
     last = p;
   }
@@ -122,7 +154,7 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
     activeId = e.pointerId;
     try { canvasEl.setPointerCapture(e.pointerId); } catch {}
     const p = pos(e);
-    if (tool === 'stamp') { placeStamp(p); return; }
+    if (tool === 'stamp') { if (!template) placeStamp(p); return; }
     dot(p);
     last = mid = p;
   });
@@ -174,6 +206,15 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
       if (blob) await paintBlob(blob);
       return enqueue(async () => { history.reset(await toBlob()); onHistory(); });
     },
+    // Coloring mode: pass an animal (see animals.js) or null for a plain drawing.
+    setTemplate(a) {
+      animal = a;
+      rebuildTemplate();
+      fillWhite();
+      if (template) template.drawOutline(ctx);
+      return enqueue(async () => { history.reset(await toBlob()); onHistory(); });
+    },
+    getTemplateId: () => animal?.id ?? null,
     settled: () => queue, // resolves when pending history work (snapshots) is done
     toBlob,
   };

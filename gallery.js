@@ -1,7 +1,7 @@
 import { attachLongPress } from './long-press.js';
 
 // Gallery screen. Parent mode (gear held 2 s) adds share/delete buttons to each drawing.
-export function createGallery(container, { storage, onNew, onOpen, onAlphabet = () => {}, hasVoice = () => true }) {
+export function createGallery(container, { storage, onNew, onOpen, onAlphabet = () => {}, onColoring = () => {}, hasVoice = () => true }) {
   let parentMode = false;
   let urls = [];
 
@@ -38,7 +38,13 @@ export function createGallery(container, { storage, onNew, onOpen, onAlphabet = 
     abc.type = 'button';
     abc.setAttribute('aria-label', 'alphabet');
     abc.addEventListener('click', onAlphabet);
-    header.append(abc, gear);
+    const paint = el('button', 'abc', '🖍️');
+    paint.type = 'button';
+    paint.setAttribute('aria-label', 'coloring');
+    paint.addEventListener('click', onColoring);
+    const tools = el('div', 'gallery-tools');
+    tools.append(abc, paint);
+    header.append(tools, gear);
     container.append(header);
 
     if (parentMode && !storage.ok) {

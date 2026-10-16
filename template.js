@@ -46,11 +46,18 @@ export function createTemplate(animal, cssW, cssH, ratio = 1) {
       ctx.clip(clipPath);
       ctx.setTransform(m);
     },
-    drawOutline(ctx) {
+    // Without `rect` the whole outline is drawn; with `rect` ({x, y, w, h} in CSS px) only that part.
+    drawOutline(ctx, rect) {
       if (!layer) buildLayer();
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
-      ctx.drawImage(layer, 0, 0, cssW, cssH);
+      if (rect) {
+        const x = Math.max(0, Math.floor(rect.x)), y = Math.max(0, Math.floor(rect.y));
+        const w = Math.min(cssW, Math.ceil(rect.x + rect.w)) - x, h = Math.min(cssH, Math.ceil(rect.y + rect.h)) - y;
+        if (w > 0 && h > 0) ctx.drawImage(layer, x * ratio, y * ratio, w * ratio, h * ratio, x, y, w, h);
+      } else {
+        ctx.drawImage(layer, 0, 0, cssW, cssH);
+      }
       ctx.restore();
     },
   };

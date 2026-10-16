@@ -6,6 +6,8 @@ import { createGallery } from './gallery.js';
 import { createSpeech } from './speech.js';
 import { createProgress } from './progress.js';
 import { createAlphabet } from './alphabet.js';
+import { getAnimal } from './animals.js';
+import { createColoring } from './coloring.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -27,7 +29,10 @@ export async function startApp() {
   let currentId = crypto.randomUUID();
   const autosave = createAutosave(async () => {
     const blob = await board.toBlob();
-    await storage.put({ id: currentId, blob, thumb: await makeThumb(blob), updatedAt: Date.now() });
+    await storage.put({
+      id: currentId, blob, thumb: await makeThumb(blob), updatedAt: Date.now(),
+      template: board.getTemplateId() ?? undefined, // coloring pages reopen with their outline
+    });
   });
   const board = createBoard($('board'), {
     onChange: () => autosave.trigger(),
@@ -41,12 +46,18 @@ export async function startApp() {
     new Promise((r) => setTimeout(r, 150)),
   ]);
 
-  async function showCanvas(drawing) {
+  const coloringScreen = $('screen-coloring');
+  async function showCanvas(drawing, newAnimal = null) {
     galleryScreen.hidden = true;
+    coloringScreen.hidden = true;
     canvasScreen.hidden = false;
     await nextFrame(); // let layout settle so the canvas has its real size
     currentId = drawing ? drawing.id : crypto.randomUUID();
-    await board.loadImage(drawing ? drawing.blob : null);
+    const animal = newAnimal ?? (drawing?.template ? getAnimal(drawing.template) : null); // unknown id: plain drawing
+    colorBtns[colorBtns.length - 1].click(); // back to the default black brush
+    animalBtn.hidden = animal !== null; // stamps are not used in coloring pages
+    await board.setTemplate(animal);
+    if (drawing) await board.loadImage(drawing.blob);
   }
   const alphabetScreen = $('screen-alphabet');
   const speech = createSpeech();
@@ -57,11 +68,18 @@ export async function startApp() {
     alphabetScreen.hidden = false;
     alphabet.showStrip();
   }
+  const coloring = createColoring(coloringScreen, { onPick: (a) => showCanvas(null, a), onExit: () => showGallery() });
+  function showColoring() {
+    galleryScreen.hidden = true;
+    coloringScreen.hidden = false;
+    coloring.render();
+  }
   const gallery = createGallery(galleryScreen, {
     storage,
     onNew: () => showCanvas(null),
     onOpen: (d) => showCanvas(d),
     onAlphabet: showAlphabet,
+    onColoring: showColoring,
     hasVoice: () => speech.hasRussianVoice(),
   });
   async function flushAll() {
@@ -73,6 +91,7 @@ export async function startApp() {
     gallery.exitParentMode();
     canvasScreen.hidden = true;
     alphabetScreen.hidden = true;
+    coloringScreen.hidden = true;
     galleryScreen.hidden = false;
     await gallery.render();
   }

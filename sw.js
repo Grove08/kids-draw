@@ -9,6 +9,7 @@ const ASSETS = [
   './app.js',
   './autosave.js',
   './canvas.js',
+  './coloring.js',
   './coverage.js',
   './drawing-logic.js',
   './gallery.js',
