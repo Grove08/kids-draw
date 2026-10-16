@@ -133,3 +133,67 @@ html, body {
 .thumb img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .mini { min-height: 48px; border: 0; border-radius: 12px; background: #fff; font-size: 17px; }
 .mini.del { color: #b3261e; }
+
+/* ---- gallery: alphabet button ---- */
+.gallery-header { justify-content: space-between; align-items: center; }
+.abc { width: 72px; height: 72px; border: 0; border-radius: 22px; background: #fff; font-size: 40px; box-shadow: 0 2px 0 #e3ddd0; }
+
+/* ---- alphabet ---- */
+#screen-alphabet { display: flex; flex-direction: column; background: #faf7f0; }
+#screen-alphabet[hidden] { display: none; }
+.alpha-header { display: flex; padding: 8px 12px; }
+.alpha-grid {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 10px;
+  padding: 8px 16px 24px;
+  align-content: start;
+}
+.alpha-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 2px 0 #e3ddd0;
+  font-size: 42px;
+  font-weight: 800;
+  font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  color: #444;
+  padding: 0;
+}
+.alpha-cell .star { position: absolute; top: 2px; right: 4px; font-size: 18px; }
+.alpha-stage { flex: 1; min-height: 0; padding: 8px 12px 0; }
+.alpha-canvas { width: 100%; height: 100%; display: block; touch-action: none; background: #fff; border-radius: 24px; }
+.alpha-info {
+  align-self: center;
+  margin: 8px;
+  min-height: 64px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 2px 0 #e3ddd0;
+  font-size: 34px;
+  font-family: ui-rounded, system-ui, sans-serif;
+}
+.alpha-bar { display: flex; justify-content: center; gap: 14px; padding: 4px 8px 12px; }
+.alpha-bar [hidden] { display: none; }
+.reward {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: min(60vw, 60vh);
+  pointer-events: none;
+  animation: pop 0.6s ease-out;
+}
+.reward[hidden] { display: none; }
+@keyframes pop { 0% { transform: scale(0.2); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+@media (min-width: 700px) and (min-height: 700px) {
+  .alpha-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 14px; }
+  .alpha-cell { font-size: 60px; }
+}

@@ -3,6 +3,9 @@ import { COLORS, STAMPS, WIDTHS } from './drawing-logic.js';
 import { createAutosave } from './autosave.js';
 import { openStorage, requestPersistence, makeThumb } from './storage.js';
 import { createGallery } from './gallery.js';
+import { createSpeech } from './speech.js';
+import { createProgress } from './progress.js';
+import { createAlphabet } from './alphabet.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -45,7 +48,22 @@ export async function startApp() {
     currentId = drawing ? drawing.id : crypto.randomUUID();
     await board.loadImage(drawing ? drawing.blob : null);
   }
-  const gallery = createGallery(galleryScreen, { storage, onNew: () => showCanvas(null), onOpen: (d) => showCanvas(d) });
+  const alphabetScreen = $('screen-alphabet');
+  const speech = createSpeech();
+  const alphabet = createAlphabet(alphabetScreen, { speech, progress: createProgress(), onExit: () => showGallery() });
+  function showAlphabet() {
+    galleryScreen.hidden = true;
+    canvasScreen.hidden = true;
+    alphabetScreen.hidden = false;
+    alphabet.showStrip();
+  }
+  const gallery = createGallery(galleryScreen, {
+    storage,
+    onNew: () => showCanvas(null),
+    onOpen: (d) => showCanvas(d),
+    onAlphabet: showAlphabet,
+    hasVoice: () => speech.hasRussianVoice(),
+  });
   async function flushAll() {
     await board.settled(); // last stroke's snapshot must land before saving
     await autosave.flush();
@@ -54,6 +72,7 @@ export async function startApp() {
     await flushAll();
     gallery.exitParentMode();
     canvasScreen.hidden = true;
+    alphabetScreen.hidden = true;
     galleryScreen.hidden = false;
     await gallery.render();
   }

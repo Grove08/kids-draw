@@ -1,7 +1,7 @@
 import { attachLongPress } from './long-press.js';
 
 // Gallery screen. Parent mode (gear held 2 s) adds share/delete buttons to each drawing.
-export function createGallery(container, { storage, onNew, onOpen }) {
+export function createGallery(container, { storage, onNew, onOpen, onAlphabet = () => {}, hasVoice = () => true }) {
   let parentMode = false;
   let urls = [];
 
@@ -34,11 +34,19 @@ export function createGallery(container, { storage, onNew, onOpen }) {
     gear.type = 'button';
     gear.setAttribute('aria-label', 'parents');
     attachLongPress(gear, () => { parentMode = !parentMode; render(); }, 2000);
-    header.append(gear);
+    const abc = el('button', 'abc', '🔤');
+    abc.type = 'button';
+    abc.setAttribute('aria-label', 'alphabet');
+    abc.addEventListener('click', onAlphabet);
+    header.append(abc, gear);
     container.append(header);
 
     if (parentMode && !storage.ok) {
       container.append(el('p', 'warn', 'Не удаётся сохранять рисунки на этом устройстве (хранилище недоступно).'));
+    }
+
+    if (parentMode && !hasVoice()) {
+      container.append(el('p', 'warn', 'Нет русского голоса: азбука будет без звука. Добавьте русский голос в Настройки → Универсальный доступ → Устная речь → Голоса.'));
     }
 
     const grid = el('div', 'grid');
