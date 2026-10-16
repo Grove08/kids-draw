@@ -23,3 +23,83 @@ html, body {
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
 }
 .screen[hidden] { display: none; }
+
+/* ---- canvas screen ---- */
+#screen-canvas { display: flex; flex-direction: column; }
+#board {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  touch-action: none;
+  background: #fff;
+  display: block;
+}
+#toolbar {
+  display: grid;
+  grid-template-columns: repeat(5, 64px);
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: #f4f1ea;
+  border-top: 2px solid #e3ddd0;
+}
+.tool {
+  width: 64px;
+  height: 64px;
+  border: 3px solid transparent;
+  border-radius: 18px;
+  background: #fff;
+  font-size: 34px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.tool:disabled { opacity: 0.3; }
+.tool.selected { border-color: #333; box-shadow: 0 0 0 3px #fff inset; }
+.tool.color { border-radius: 50%; border-color: #fff; }
+.tool.color.selected { border-color: #333; }
+.tool .dot { background: #333; border-radius: 50%; }
+#tray {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 10;
+}
+#tray[hidden] { display: none; }
+#tray .sheet {
+  display: grid;
+  grid-template-columns: repeat(4, 80px);
+  gap: 10px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 28px;
+}
+#tray .tool { width: 80px; height: 80px; font-size: 48px; background: #f4f1ea; }
+
+/* iPad / large screens: bigger targets, more per row */
+@media (min-width: 700px) and (min-height: 700px) {
+  #toolbar { grid-template-columns: repeat(auto-fit, 72px); gap: 10px; padding: 12px; }
+  .tool { width: 72px; height: 72px; font-size: 40px; }
+  #tray .sheet { grid-template-columns: repeat(4, 110px); gap: 14px; }
+  #tray .tool { width: 110px; height: 110px; font-size: 64px; }
+}
+
+/* phone in landscape: tools in a strip on the left */
+@media (orientation: landscape) and (max-height: 600px) {
+  #screen-canvas { flex-direction: row-reverse; }
+  #toolbar {
+    grid-template-columns: repeat(3, 64px);
+    align-content: center;
+    border-top: 0;
+    border-right: 2px solid #e3ddd0;
+    overflow-y: auto;
+  }
+}

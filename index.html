@@ -14,7 +14,12 @@
   <title>Рисовалка</title>
 </head>
 <body>
-  <main id="screen-canvas" class="screen"></main>
+  <main id="screen-canvas" class="screen">
+    <canvas id="board"></canvas>
+    <nav id="toolbar" aria-label="Инструменты"></nav>
+    <div id="tray" hidden></div>
+  </main>
   <section id="screen-gallery" class="screen" hidden></section>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
