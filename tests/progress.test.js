@@ -49,3 +49,30 @@ test('missing storage (undefined) works in memory', () => {
   p.markLearned('Ж');
   assert.deepEqual(p.learned(), ['Ж']);
 });
+
+test('reset clears learned letters', () => {
+  const p = createProgress(fakeStorage());
+  p.markLearned('А'); p.markLearned('Б');
+  p.reset();
+  assert.deepEqual(p.learned(), []);
+  assert.equal(p.isLearned('А'), false);
+});
+test('reset persists across a new createProgress on the same storage', () => {
+  const s = fakeStorage();
+  const p = createProgress(s);
+  p.markLearned('В');
+  p.reset();
+  assert.deepEqual(createProgress(s).learned(), []);
+});
+test('reset does not throw when storage is missing or throws', () => {
+  const a = createProgress(undefined); a.markLearned('Г'); a.reset();
+  assert.deepEqual(a.learned(), []);
+  const b = createProgress({ getItem: () => null, setItem: () => { throw new Error('quota'); } });
+  b.markLearned('Д'); b.reset();
+  assert.deepEqual(b.learned(), []);
+});
+test('letters can be learned again after reset', () => {
+  const p = createProgress(fakeStorage());
+  p.markLearned('Е'); p.reset(); p.markLearned('Е');
+  assert.deepEqual(p.learned(), ['Е']);
+});

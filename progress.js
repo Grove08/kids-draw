@@ -11,6 +11,10 @@ export function createProgress(storage = globalThis.localStorage, key = 'kd-lear
       set.add(ch);
       try { storage.setItem(key, JSON.stringify([...set])); } catch { /* keep in memory */ }
     },
+    reset() {
+      set = new Set();
+      try { storage.setItem(key, '[]'); } catch { /* memory is already cleared */ }
+    },
     isLearned: (ch) => set.has(ch),
     learned: () => [...set],
   };

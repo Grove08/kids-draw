@@ -221,3 +221,9 @@ html, body {
   padding: 8px;
 }
 .color-cell canvas { display: block; pointer-events: none; }
+
+/* alphabet parent zone */
+.alpha-header { align-items: center; gap: 12px; }
+.alpha-header .gear { margin-left: auto; }
+.alpha-header .mini { min-height: 56px; padding: 0 16px; }
+.alpha-header .mini[hidden] { display: none; }

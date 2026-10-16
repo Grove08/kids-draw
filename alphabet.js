@@ -1,4 +1,5 @@
 import { LETTERS } from './letters.js';
+import { attachLongPress } from './long-press.js';
 import { createCoverage, maskFromImageData } from './coverage.js';
 import { COLORS, STAMPS, WIDTHS, shouldIgnorePointer } from './drawing-logic.js';
 
@@ -26,6 +27,19 @@ export function createAlphabet(container, { speech, progress, onExit }) {
     home.setAttribute('aria-label', 'home');
     home.addEventListener('click', onExit);
     header.append(home);
+
+    // Parent zone: hold the gear for 2 s to reveal "reset stars" (hidden from the child).
+    const gear = el('button', 'gear', '⚙️');
+    gear.setAttribute('aria-label', 'parents');
+    const resetBtn = el('button', 'mini del', '🗑 Сбросить звёздочки');
+    resetBtn.hidden = true;
+    resetBtn.addEventListener('click', () => {
+      if (confirm('Сбросить все звёздочки?')) { progress.reset(); showStrip(); }
+    });
+    const detach = attachLongPress(gear, () => { resetBtn.hidden = !resetBtn.hidden; gear.classList.toggle('on', !resetBtn.hidden); }, 2000);
+    header.append(resetBtn, gear);
+    cleanup = detach;
+
     const grid = el('div', 'alpha-grid');
     LETTERS.forEach((l, i) => {
       const b = el('button', 'alpha-cell');
