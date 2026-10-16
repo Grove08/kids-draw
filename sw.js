@@ -1,10 +1,11 @@
-const CACHE = 'kids-draw-v2';
+const CACHE = 'kids-draw-v3';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './manifest.webmanifest',
   './alphabet.js',
+  './animals.js',
   './app.js',
   './autosave.js',
   './canvas.js',

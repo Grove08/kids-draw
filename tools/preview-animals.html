@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Animals preview</title>
+<style>body{font-family:sans-serif;display:flex;flex-wrap:wrap;gap:12px;padding:12px}figure{margin:0;text-align:center}canvas{border:1px solid #ccc}</style>
+<script type="module">
+import { ANIMALS } from '../animals.js';
+for (const a of ANIMALS) {
+  const fig = document.createElement('figure');
+  const c = document.createElement('canvas'); c.width = c.height = 300;
+  const ctx = c.getContext('2d'); ctx.scale(3, 3);
+  ctx.fillStyle = '#e9e9e9';
+  for (const f of a.fills) ctx.fill(new Path2D(f));
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.8; ctx.lineCap = ctx.lineJoin = 'round';
+  for (const l of a.lines) ctx.stroke(new Path2D(l));
+  ctx.fillStyle = '#000';
+  for (const d of a.dots) { ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 7); ctx.fill(); }
+  fig.append(c, Object.assign(document.createElement('div'), { textContent: a.name }));
+  document.body.append(fig);
+}
+</script>
