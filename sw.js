@@ -14,6 +14,7 @@ const ASSETS = [
   './letters.js',
   './long-press.js',
   './progress.js',
+  './speech.js',
   './storage.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
