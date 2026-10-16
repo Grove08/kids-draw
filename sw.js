@@ -13,6 +13,7 @@ const ASSETS = [
   './history.js',
   './letters.js',
   './long-press.js',
+  './progress.js',
   './storage.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
