@@ -10,6 +10,7 @@ const ASSETS = [
   './drawing-logic.js',
   './gallery.js',
   './history.js',
+  './letters.js',
   './long-press.js',
   './storage.js',
   './icons/icon-192.png',
