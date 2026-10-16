@@ -143,7 +143,8 @@ export function createAlphabet(container, { speech, progress, onExit }) {
     });
     canvas.addEventListener('pointermove', (e) => {
       if (e.pointerId !== activeId || !last) return;
-      for (const ev of (e.getCoalescedEvents ? e.getCoalescedEvents() : [e])) {
+      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+      for (const ev of events.length ? events : [e]) {
         const p = pos(ev);
         paintSegment(last, p);
         last = p;
