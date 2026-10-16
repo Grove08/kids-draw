@@ -1,13 +1,17 @@
 // A coloring template: maps an animal (0..100 box) onto the canvas, clips paint to its shape
 // and draws its outline on top.
-export function fitTransform(cssW, cssH, margin = 0.08) {
-  const m = Math.min(cssW, cssH);
-  const scale = Math.max(0, (m * (1 - 2 * margin)) / 100);
-  return { scale, ox: (cssW - 100 * scale) / 2, oy: (cssH - 100 * scale) / 2 };
+// `insets` reserve space covered by the floating toolbar: the animal is fitted into the rest.
+export function fitTransform(cssW, cssH, margin = 0.08, insets = { left: 0, bottom: 0 }) {
+  const areaW = Math.max(0, cssW - insets.left);
+  const areaH = Math.max(0, cssH - insets.bottom);
+  const scale = Math.max(0, (Math.min(areaW, areaH) * (1 - 2 * margin)) / 100);
+  return { scale, ox: insets.left + (areaW - 100 * scale) / 2, oy: (areaH - 100 * scale) / 2 };
 }
 
-export function createTemplate(animal, cssW, cssH, ratio = 1) {
-  const { scale, ox, oy } = fitTransform(cssW, cssH);
+const LINE_UNITS = (0.012 * 100) / (1 - 2 * 0.08); // outline width in 0..100 units (constant)
+
+export function createTemplate(animal, cssW, cssH, ratio = 1, insets = { left: 0, bottom: 0 }) {
+  const { scale, ox, oy } = fitTransform(cssW, cssH, 0.08, insets);
   const clipPath = new Path2D();
   for (const f of animal.fills) clipPath.addPath(new Path2D(f));
   let layer = null;
@@ -22,7 +26,7 @@ export function createTemplate(animal, cssW, cssH, ratio = 1) {
     L.scale(ratio, ratio);
     L.translate(ox, oy);
     L.scale(scale, scale);
-    L.lineWidth = scale > 0 ? (0.012 * Math.min(cssW, cssH)) / scale : 1;
+    L.lineWidth = LINE_UNITS;
     L.lineCap = L.lineJoin = 'round';
     L.strokeStyle = L.fillStyle = '#000';
     animal.fills.forEach((f, i) => {
@@ -38,6 +42,8 @@ export function createTemplate(animal, cssW, cssH, ratio = 1) {
 
   return {
     scale,
+    cx: ox + 50 * scale, // center of the animal box in CSS px
+    cy: oy + 50 * scale,
     // Caller does ctx.save() before and ctx.restore() after: the clip stays until restore.
     clip(ctx) {
       const m = ctx.getTransform();

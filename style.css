@@ -227,3 +227,47 @@ html, body {
 .alpha-header .gear { margin-left: auto; }
 .alpha-header .mini { min-height: 56px; padding: 0 16px; }
 .alpha-header .mini[hidden] { display: none; }
+
+/* ---- floating toolbar (collapsible); the canvas always fills the screen ---- */
+#screen-canvas { display: block; }
+#board {
+  position: absolute;
+  left: var(--safe-left);
+  top: var(--safe-top);
+  width: calc(100% - var(--safe-left) - var(--safe-right));
+  height: calc(100% - var(--safe-top) - var(--safe-bottom));
+}
+#toolbar {
+  position: absolute;
+  left: var(--safe-left);
+  right: var(--safe-right);
+  bottom: var(--safe-bottom);
+  z-index: 2;
+  transition: transform 0.2s ease;
+}
+.collapsed #toolbar { transform: translateY(calc(100% + var(--safe-bottom) + 4px)); pointer-events: none; }
+#minibar {
+  position: absolute;
+  right: calc(var(--safe-right) + 12px);
+  bottom: calc(var(--safe-bottom) + var(--tb-h, 0px) + 8px);
+  display: flex;
+  gap: 8px;
+  z-index: 3;
+  transition: bottom 0.2s ease;
+}
+.collapsed #minibar { bottom: calc(var(--safe-bottom) + 12px); }
+#minibar .tool {
+  width: 52px;
+  height: 52px;
+  font-size: 28px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+#minibar .mini-only { display: none; }
+.collapsed #minibar .mini-only { display: flex; }
+@media (orientation: landscape) and (max-height: 600px) {
+  #toolbar { right: auto; top: var(--safe-top); }
+  .collapsed #toolbar { transform: translateX(calc(-100% - var(--safe-left) - 4px)); }
+  #minibar { right: auto; left: calc(var(--safe-left) + var(--tb-w, 0px) + 8px); bottom: calc(var(--safe-bottom) + 12px); }
+  .collapsed #minibar { left: calc(var(--safe-left) + 12px); }
+}

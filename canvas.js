@@ -5,7 +5,7 @@ import { createTemplate, fitTransform } from './template.js';
 const PIXEL_BUDGET = 4_000_000; // max backing-store pixels, keeps iPad memory sane
 const BG = '#ffffff';
 
-export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {} } = {}) {
+export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {}, getInsets = () => ({ left: 0, bottom: 0 }) } = {}) {
   const ctx = canvasEl.getContext('2d');
   const history = createHistory(20);
   let cssW = 0, cssH = 0, ratio = 1;
@@ -31,20 +31,22 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   }
 
-  // Draw `img` (w x h CSS px) scaled uniformly and centered (no distortion). In coloring mode the
-  // scale follows the outline's own scale, so the old outline lands exactly on the new one.
-  function drawContain(img, w, h) {
-    let s = Math.min(cssW / w, cssH / h);
-    if (animal) {
-      const from = fitTransform(w, h).scale;
-      if (from > 0) s = fitTransform(cssW, cssH).scale / from;
+  // Draw `img` (w x h CSS px) scaled uniformly. Plain mode: fit and center (no distortion). Coloring
+  // mode: follow the outline (`oldT` is the template the image was drawn with), so the old outline
+  // lands exactly on the new one.
+  function drawPlaced(img, w, h, oldT) {
+    if (animal && oldT && template && oldT.scale > 0 && template.scale > 0) {
+      const k = template.scale / oldT.scale;
+      ctx.drawImage(img, template.cx - k * oldT.cx, template.cy - k * oldT.cy, w * k, h * k);
+      return;
     }
+    const s = Math.min(cssW / w, cssH / h);
     const dw = w * s, dh = h * s;
     ctx.drawImage(img, (cssW - dw) / 2, (cssH - dh) / 2, dw, dh);
   }
 
   function rebuildTemplate() {
-    template = animal ? createTemplate(animal, cssW, cssH, ratio) : null;
+    template = animal ? createTemplate(animal, cssW, cssH, ratio, getInsets()) : null;
   }
 
   // Run `fn` (painting) inside the animal's clip, then redraw the outline over `box` (CSS px).
@@ -67,6 +69,7 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
   const ro = new ResizeObserver(() => {
     const oldCanvas = canvasEl.width ? snapshotCanvas() : null;
     const oldCss = { w: cssW, h: cssH };
+    const oldT = template;
     if (activeId !== null) return;
     const rect = canvasEl.getBoundingClientRect();
     if (!rect.width || !rect.height) return; // screen hidden: keep the picture
@@ -76,8 +79,8 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
     canvasEl.height = Math.round(cssH * ratio);
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     fillWhite();
-    if (oldCanvas && oldCss.w) drawContain(oldCanvas, oldCss.w, oldCss.h);
     rebuildTemplate();
+    if (oldCanvas && oldCss.w) drawPlaced(oldCanvas, oldCss.w, oldCss.h, oldT);
     if (template) template.drawOutline(ctx);
     enqueue(async () => { history.reset(await toBlob()); onHistory(); });
   });
@@ -173,7 +176,9 @@ export function createBoard(canvasEl, { onChange = () => {}, onHistory = () => {
   async function paintBlob(blob) {
     const bmp = await createImageBitmap(blob);
     fillWhite();
-    drawContain(bmp, bmp.width / ratio, bmp.height / ratio);
+    const w = bmp.width / ratio, h = bmp.height / ratio;
+    // a saved picture was drawn with the same kind of template (same toolbar insets, other size)
+    drawPlaced(bmp, w, h, animal ? createTemplate(animal, w, h, ratio, getInsets()) : null);
     bmp.close?.();
   }
 

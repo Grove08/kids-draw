@@ -23,7 +23,7 @@ function button(cls, content, label) {
 export async function startApp() {
   const toolbar = $('toolbar');
   const tray = $('tray');
-  let undoBtn;
+  let undoBtn, undoMini;
   const storage = await openStorage();
   requestPersistence();
   let currentId = crypto.randomUUID();
@@ -34,11 +34,22 @@ export async function startApp() {
       template: board.getTemplateId() ?? undefined, // coloring pages reopen with their outline
     });
   });
+  const canvasScreen = $('screen-canvas');
+  // The toolbar floats over the canvas; coloring pages are fitted into the part it does not cover.
+  const stripMq = window.matchMedia('(orientation: landscape) and (max-height: 600px)');
+  const getInsets = () => (stripMq.matches
+    ? { left: toolbar.offsetWidth, bottom: 0 }
+    : { left: 0, bottom: toolbar.offsetHeight });
+  const syncToolbarSize = () => {
+    canvasScreen.style.setProperty('--tb-h', `${toolbar.offsetHeight}px`);
+    canvasScreen.style.setProperty('--tb-w', `${toolbar.offsetWidth}px`);
+  };
+  new ResizeObserver(syncToolbarSize).observe(toolbar);
   const board = createBoard($('board'), {
     onChange: () => autosave.trigger(),
-    onHistory: () => { undoBtn.disabled = !board.canUndo(); },
+    onHistory: () => { undoBtn.disabled = !board.canUndo(); undoMini.disabled = undoBtn.disabled; },
+    getInsets,
   });
-  const canvasScreen = $('screen-canvas');
   const galleryScreen = $('screen-gallery');
   // rAF is paused in background pages, so race it against a timer
   const nextFrame = () => Promise.race([
@@ -165,6 +176,25 @@ export async function startApp() {
   homeBtn.addEventListener('click', showGallery);
 
   toolbar.append(...colorBtns, ...widthBtns, eraserBtn, animalBtn, undoBtn, homeBtn);
+
+  // collapse the toolbar to draw on a bigger area; undo and home stay reachable
+  const COLLAPSE_KEY = 'kd-toolbar-collapsed';
+  let collapsed = false;
+  try { collapsed = localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { /* per-viewer convenience only */ }
+  const toggleBtn = button('toggle', '⬇️', 'toolbar');
+  undoMini = button('undo mini-only', '↩️', 'undo');
+  undoMini.disabled = true;
+  undoMini.addEventListener('click', () => board.undo());
+  const homeMini = button('home mini-only', '🏠', 'home');
+  homeMini.addEventListener('click', showGallery);
+  function applyCollapsed() {
+    canvasScreen.classList.toggle('collapsed', collapsed);
+    toggleBtn.textContent = collapsed ? '⬆️' : '⬇️';
+    try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch { /* ignore */ }
+  }
+  toggleBtn.addEventListener('click', () => { collapsed = !collapsed; applyCollapsed(); });
+  $('minibar').append(toggleBtn, undoMini, homeMini);
+  applyCollapsed();
   return { board, homeBtn };
 }
 
